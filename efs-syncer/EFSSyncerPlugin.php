@@ -348,7 +348,7 @@ namespace YL {
 		 */
 		public function getAllInstanceIds() {
 			global $wpdb;
-			$job_settings_names = $wpdb->get_col( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'efs\_syncer\_last\_alive\_%'" );
+			$job_settings_names = $wpdb->get_col( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'efss\_last\_alive\_%'" );
 
 			return preg_replace( '/efss_last_alive_/', '', $job_settings_names );
 		}
@@ -380,36 +380,12 @@ namespace YL {
 			return update_option( $option_name, $option_value, false );
 		}
 
-		public function register_cron() {
-			if ( ! wp_next_scheduled( 'efs_syncer_event' ) ) {
-				wp_schedule_event( time(), 'hourly', 'efs_syncer_event' );
-			}
-		}
-
-
-		public function registerSchedule( $schedules ) {
-			if ( ! array_key_exists( '5min', $schedules ) ) {
-				$schedules['5min'] = [
-					'interval' => 5 * MINUTE_IN_SECONDS - 1,
-					'display'  => 'Every 5 Minutes'
-				];
-			}
-
-			return $schedules;
-		}
-
 		/**
 		 * attaches the Wordpress hooks that allow us to operate when file system changes occur
 		 */
 		public function attach_hooks() {
 			do_action('init', [$this, 'register_cron']);
 			do_action('init', [ $this, 'registerSelf' ] );
-
-			add_filter( 'cron_schedules', [$this, 'registerSchedule' ]);
-
-			do_action( 'efs_syncer_event', [ $this, 'releaseExpiredLocks' ] );
-			do_action( 'efs_syncer_event', [ $this, 'deleteDeadInstances' ] );
-			do_action( 'efs_syncer_event', [ $this, 'handleSyncJobs' ] );
 
 			do_action( 'delete_plugin', [ $this, 'syncToEFS' ] );
 			do_action( 'upgrader_process_complete', [ $this, 'syncToEFS' ] );

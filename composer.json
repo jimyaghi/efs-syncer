@@ -1,5 +1,8 @@
 {
     "name": "jimyaghi/efs-syncer",
+    "description": "Syncronises changes from local drive to EFS and vice versa on multi-instance Wordpress install",
+    "license": "LGPL-2.1-only",
+    "type": "wordpress-plugin",
     "authors": [
         {
             "name": "Jim Yaghi",

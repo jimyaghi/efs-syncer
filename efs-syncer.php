@@ -22,7 +22,7 @@ namespace YL {
 
 // Basic security, prevents file from being loaded directly.
 	defined( 'ABSPATH' ) or die( 'Cheatin&#8217; uh?' );
-	require_once( __DIR__ . '/EFSSyncerPlugin.php' );
+	require_once( __DIR__ . '/efs-syncer/EFSSyncerPlugin.php' );
 	$GLOBALS['efs_syncer_plugin'] = EFSSyncerPlugin::getInstance();
 
 }

@@ -9,9 +9,15 @@
  *
  */
 namespace YL {
+	if ( ( $argv[1] ?? false ) === false || ! file_exists( $argv[1] . '/wp-load.php' ) ) {
+		die( 'Cheatin&#8217; uh?' );
+	}
 
 	// load wordpress environment
 	require_once $argv[1] . '/wp-load.php';
 
-	EFSSyncerPlugin::getInstance()->handleSyncJobs();
+	$plugin = EFSSyncerPlugin::getInstance();
+	$plugin->releaseExpiredLocks();
+	$plugin->deleteDeadInstances();
+	$plugin->handleSyncJobs();
 }
