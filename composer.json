@@ -1,0 +1,10 @@
+{
+    "name": "jimyaghi/efs-syncer",
+    "authors": [
+        {
+            "name": "Jim Yaghi",
+            "email": "jim@jimyaghi.com"
+        }
+    ],
+    "require": {}
+}
