@@ -13,6 +13,9 @@ namespace YL {
 		die( 'Cheatin&#8217; uh?' );
 	}
 
+	define( 'WP_DEBUG', true );
+	define( 'WP_DEBUG_DISPLAY', true );
+
 	// load wordpress environment
 	require_once $argv[1] . '/wp-load.php';
 
