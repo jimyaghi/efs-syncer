@@ -249,8 +249,17 @@ namespace YL {
 			$fromDir = rtrim( $fromDir, '/' );
 			$toDir   = rtrim( $toDir, '/' );
 
-			// do the operation and wait
-			return shell_exec( "rsync -aWPAXE --delete --inplace \"{$fromDir}/\" \"{$toDir}\" >> /var/log/yaghilabs/{$operationType}.log 2>&1" );
+			$dirs = scandir( static::LOCAL_ROOT );
+			foreach ( $dirs as $dir ) {
+				if ( $dir === '.'
+				     || $dir === '..'
+				     || ! is_dir( static::LOCAL_ROOT . "/{$dir}" )
+				     || ! is_dir( static::REMOTE_ROOT . "/{$dir}" ) ) {
+					continue;
+				}
+				// do the operation and wait
+				shell_exec( "rsync -aWPAXE --delete --inplace \"{$fromDir}/\" \"{$toDir}\" >> /var/log/yaghilabs/{$operationType}.log 2>&1" );
+			}
 		}
 
 
