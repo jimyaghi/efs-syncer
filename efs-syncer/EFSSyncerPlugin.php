@@ -258,7 +258,8 @@ namespace YL {
 					continue;
 				}
 				// do the operation and wait
-				shell_exec( "rsync -aWPAXE --delete --inplace \"{$fromDir}/\" \"{$toDir}\" >> /var/log/yaghilabs/{$operationType}.log 2>&1" );
+				echo "rsync -aWPAXE --delete --inplace \"{$fromDir}/$dir/\" \"{$toDir}/$dir\" >> /var/log/yaghilabs/{$operationType}.log 2>&1" ;
+				shell_exec( "rsync -aWPAXE --dry-run --delete --inplace \"{$fromDir}/$dir/\" \"{$toDir}/$dir\" >> /var/log/yaghilabs/{$operationType}.log 2>&1" );
 			}
 		}
 
