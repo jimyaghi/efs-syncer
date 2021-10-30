@@ -46,7 +46,7 @@ namespace YL {
 		 * @return EFSSyncerPlugin
 		 */
 		public static function getInstance() {
-			if ( !static::$instance ) {
+			if ( ! static::$instance ) {
 				static::$instance = new static();
 			}
 
@@ -77,10 +77,11 @@ namespace YL {
 		 * @return array
 		 */
 		public function addJob( $job_to_add ) {
-			$new_time                  = microtime( true );
+			$created_at                = microtime( true );
+			$jobId                     = strval( $created_at );
 			$myInstanceID              = $this->getInstanceID();
 			$defaults                  = [
-				'created_at'  => $new_time,
+				'created_at'  => $created_at,
 				'instance_id' => $myInstanceID,
 				'type'        => static::OPERATION_FROM_EFS,
 				'status'      => static::STATUS_QUEUED,
@@ -89,7 +90,7 @@ namespace YL {
 			$job_to_add                = $job_to_add + $defaults;
 			$job_to_add['instance_id'] = $job_to_add['instance_id'] ?: $myInstanceID;
 			$jobs                      = $this->getJob();
-			$jobs[ $new_time ]         = $job_to_add;
+			$jobs[ $jobId ]            = $job_to_add;
 			ksort( $jobs, SORT_NUMERIC );
 			$this->update_option( 'efss_jobs_' . $job_to_add['instance_id'], $jobs );
 
@@ -97,13 +98,13 @@ namespace YL {
 		}
 
 		/**
-		 * @param float $jobIDMicroTime
+		 * @param string $jobIDMicroTime
 		 * @param array $job_to_update
 		 *
 		 * @return array|false
 		 */
 		public function updateJob( $jobIDMicroTime = null, $job_to_update = [] ) {
-			$job = $this->getJob( $jobIDMicroTime, $job_to_update['instance_id'] ?? null );
+			$job = $this->getJob( strval( $jobIDMicroTime ), $job_to_update['instance_id'] ?? null );
 			if ( $job === false ) {
 				$job = [];
 			}
@@ -116,8 +117,8 @@ namespace YL {
 		 * jobs for the given instance_id. if an instance_id is not provided, we default to the current compute
 		 * instance ID.
 		 *
-		 * @param null $jobIDMicroTime
-		 * @param null $instance_id
+		 * @param string $jobIDMicroTime
+		 * @param string $instance_id
 		 *
 		 * @return false|array
 		 */
@@ -125,18 +126,19 @@ namespace YL {
 			if ( $instance_id === null ) {
 				$instance_id = $this->getInstanceID();
 			}
+			$jobIDMicroTimeStr = strval( $jobIDMicroTime );
 
 			$jobs = $this->get_option( 'efss_jobs_' . $instance_id, [] );
 
-			return $jobIDMicroTime === null ? $jobs : ( $jobs[ $jobIDMicroTime ] ?? false );
+			return $jobIDMicroTime === null ? $jobs : ( $jobs[ $jobIDMicroTimeStr ] ?? false );
 		}
 
 		/**
 		 * Deletes a job given by ID from the provided instance. If an instance_id is not provided, the default is the
 		 * current compute instance's ID
 		 *
-		 * @param $jobIDMicroTime
-		 * @param $instance_id
+		 * @param string $jobIDMicroTime
+		 * @param string $instance_id
 		 *
 		 * @return array|false
 		 */
@@ -144,9 +146,9 @@ namespace YL {
 			if ( $instance_id === null ) {
 				$instance_id = $this->getInstanceID();
 			}
-
-			$jobs = $this->getJob( null, $instance_id );
-			$job  = $jobs[ $jobIDMicroTime ] ?? false;
+			$jobIDMicroTime = strval( $jobIDMicroTime );
+			$jobs           = $this->getJob( null, $instance_id );
+			$job            = $jobs[ $jobIDMicroTime ] ?? false;
 			unset( $jobs[ $jobIDMicroTime ] );
 			$this->update_option( 'efss_jobs_' . $instance_id, $jobs );
 
@@ -160,6 +162,9 @@ namespace YL {
 			$this->update_option( 'efss_last_alive_' . $this->getInstanceID(), microtime( true ) );
 		}
 
+		/**
+		 * @param string $instance_to_expire
+		 */
 		public function deleteInvokedJobs( $instance_to_expire ) {
 			$expired_instance_jobs = array_keys( $this->getJob( null, $instance_to_expire ) );
 			$instance_ids          = $this->getAllInstanceIds();
@@ -173,12 +178,12 @@ namespace YL {
 			}
 		}
 
-		public function out($string) {
+		public function out( $string ) {
 			print "$string\n";
 		}
 
 		public function deleteDeadInstances() {
-			$this->out( "Deleting dead instances");
+			$this->out( "Deleting dead instances" );
 
 			$instance_ids = $this->getAllInstanceIds();
 			foreach ( $instance_ids as $id ) {
@@ -186,7 +191,7 @@ namespace YL {
 				if ( $last_alive === false || ( microtime( true ) - $last_alive ) <= static::INSTANCE_TIME_LIMIT ) {
 					continue;
 				}
-				$this->out("Deleting dead instance $id");
+				$this->out( "Deleting dead instance $id" );
 				$this->deleteInvokedJobs( $id );
 
 				delete_option( 'efss_jobs_' . $id );
@@ -210,7 +215,7 @@ namespace YL {
 				&& $job['instance_id'] === $myId
 			) {
 				$this->disallowSync();
-				$jobId = $job['created_at'];
+				$jobId = strval( $job['created_at'] );
 				$this->markSyncStarted( $jobId );
 				$this->doSync( $job['type'] );
 
@@ -256,6 +261,7 @@ namespace YL {
 			$fromDir = rtrim( $fromDir, '/' );
 			$toDir   = rtrim( $toDir, '/' );
 
+			// sync only dirs found in local
 			$dirs = scandir( static::LOCAL_ROOT );
 			foreach ( $dirs as $dir ) {
 				if ( $dir === '.'
@@ -265,7 +271,7 @@ namespace YL {
 					continue;
 				}
 				// do the operation and wait
-				echo "rsync -aWPAXE --delete --inplace \"{$fromDir}/$dir/\" \"{$toDir}/$dir\" >> /var/log/yaghilabs/{$operationType}.log 2>&1" ;
+				echo "rsync -aWPAXE --delete --inplace \"{$fromDir}/$dir/\" \"{$toDir}/$dir\" >> /var/log/yaghilabs/{$operationType}.log 2>&1";
 				shell_exec( "rsync -aWPAXE --dry-run --delete --inplace \"{$fromDir}/$dir/\" \"{$toDir}/$dir\" >> /var/log/yaghilabs/{$operationType}.log" );
 			}
 		}
@@ -276,7 +282,7 @@ namespace YL {
 		 */
 		public function releaseExpiredLocks() {
 			$lockTime = $this->get_option( 'efss_disallow_sync', false ) ?: false;
-			if ( $lockTime !== false && (microtime(true) - $lockTime) > static::LOCK_TIME_LIMIT ) {
+			if ( $lockTime !== false && ( microtime( true ) - $lockTime ) > static::LOCK_TIME_LIMIT ) {
 				$this->update_option( 'efss_disallow_sync', false );
 			}
 		}
@@ -284,23 +290,23 @@ namespace YL {
 		/**
 		 * Updates the given jobId so it now has a status of started
 		 *
-		 * @param $jobId
+		 * @param string $jobId
 		 *
 		 * @return array|false
 		 */
 		public function markSyncStarted( $jobId ) {
-			return $this->updateJob( $jobId, [ 'status' => static::STATUS_STARTED ] );
+			return $this->updateJob( strval( $jobId ), [ 'status' => static::STATUS_STARTED ] );
 		}
 
 		/**
 		 * Updates the given jobId so it now has a status of complete
 		 *
-		 * @param $jobId
+		 * @param string $jobId
 		 *
 		 * @return array|false
 		 */
 		public function markSyncComplete( $jobId ) {
-			return $this->updateJob( $jobId, [ 'status' => static::STATUS_COMPLETE ] );
+			return $this->updateJob( strval( $jobId ), [ 'status' => static::STATUS_COMPLETE ] );
 		}
 
 
@@ -324,9 +330,9 @@ namespace YL {
 						continue;
 					}
 
-					if ( $time < $minTime
-					     || ( $time === $minTime && strcmp( $minInstance, $instance_id ) < 0 ) ) {
-						$minTime     = $time;
+					if ( $job['created_at'] < $minTime
+					     || ( $job['created_at'] === $minTime && strcmp( $minInstance, $instance_id ) < 0 ) ) {
+						$minTime     = $job['created_at'];
 						$minInstance = $instance_id;
 						$minJob      = $job;
 					}
@@ -401,7 +407,7 @@ namespace YL {
 		 * attaches the Wordpress hooks that allow us to operate when file system changes occur
 		 */
 		public function attach_hooks() {
-			add_action('init', [ $this, 'registerSelf' ] );
+			add_action( 'init', [ $this, 'registerSelf' ] );
 
 			add_action( 'delete_plugin', [ $this, 'syncToEFS' ] );
 			add_action( 'upgrader_process_complete', [ $this, 'syncToEFS' ] );
