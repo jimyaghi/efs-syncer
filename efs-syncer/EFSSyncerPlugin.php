@@ -173,13 +173,20 @@ namespace YL {
 			}
 		}
 
+		public function out($string) {
+			print "$string\n";
+		}
+
 		public function deleteDeadInstances() {
+			$this->out( "Deleting dead instances");
+
 			$instance_ids = $this->getAllInstanceIds();
 			foreach ( $instance_ids as $id ) {
 				$last_alive = $this->get_option( 'efss_last_alive_' . $id, false );
 				if ( $last_alive === false || ( microtime( true ) - $last_alive ) <= static::INSTANCE_TIME_LIMIT ) {
 					continue;
 				}
+				$this->out("Deleting dead instance $id");
 				$this->deleteInvokedJobs( $id );
 
 				delete_option( 'efss_jobs_' . $id );
@@ -268,8 +275,8 @@ namespace YL {
 		 * If a lock has been taken out and took too long to release, we assume a dead process and delete it
 		 */
 		public function releaseExpiredLocks() {
-			$lockTime = $this->get_option( 'efss_disallow_sync', PHP_FLOAT_MAX );
-			if ( ( microtime( true ) - $lockTime ) > static::LOCK_TIME_LIMIT ) {
+			$lockTime = $this->get_option( 'efss_disallow_sync', false ) ?: strtotime("-10 years");
+			if ( $lockTime !== false && (microtime(true) - $lockTime) > static::LOCK_TIME_LIMIT ) {
 				$this->update_option( 'efss_disallow_sync', false );
 			}
 		}
