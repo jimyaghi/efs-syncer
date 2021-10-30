@@ -275,7 +275,7 @@ namespace YL {
 		 * If a lock has been taken out and took too long to release, we assume a dead process and delete it
 		 */
 		public function releaseExpiredLocks() {
-			$lockTime = $this->get_option( 'efss_disallow_sync', false ) ?: strtotime("-10 years");
+			$lockTime = $this->get_option( 'efss_disallow_sync', false ) ?: false;
 			if ( $lockTime !== false && (microtime(true) - $lockTime) > static::LOCK_TIME_LIMIT ) {
 				$this->update_option( 'efss_disallow_sync', false );
 			}
