@@ -81,6 +81,7 @@ namespace YL {
 			$jobId                     = strval( $created_at );
 			$myInstanceID              = $this->getInstanceID();
 			$defaults                  = [
+				'id'          => $jobId,
 				'created_at'  => $created_at,
 				'instance_id' => $myInstanceID,
 				'type'        => static::OPERATION_FROM_EFS,
@@ -91,7 +92,6 @@ namespace YL {
 			$job_to_add['instance_id'] = $job_to_add['instance_id'] ?: $myInstanceID;
 			$jobs                      = $this->getJob();
 			$jobs[ $jobId ]            = $job_to_add;
-			ksort( $jobs, SORT_NUMERIC );
 			$this->update_option( 'efss_jobs_' . $job_to_add['instance_id'], $jobs );
 
 			return $job_to_add;
@@ -216,7 +216,7 @@ namespace YL {
 				&& $job['instance_id'] === $myId
 			) {
 				$this->disallowSync();
-				$jobId = strval( $job['created_at'] );
+				$jobId = $job['id'];
 				$this->markSyncStarted( $jobId );
 				$this->doSync( $job['type'] );
 
@@ -338,9 +338,10 @@ namespace YL {
 					     || bccomp( $job['created_at'], $minTime ) < 0
 					     || ( bccomp( $job['created_at'], $minTime ) === 0 && strcmp( $instance_id, $minInstance ) < 0 )
 					) {
-						$minTime     = $job['created_at'];
-						$minInstance = $instance_id;
-						$minJob      = $job;
+						$minTime      = $job['created_at'];
+						$minInstance  = $instance_id;
+						$minJob       = $job;
+						$minJob['id'] = $time;
 					}
 				}
 			}
@@ -367,7 +368,7 @@ namespace YL {
 		 * @return bool
 		 */
 		private function isSyncAllowed() {
-			return $this->get_option( 'efss_disallow_sync', false ) === false;
+			return !$this->get_option( 'efss_disallow_sync', false );
 		}
 
 		/**
