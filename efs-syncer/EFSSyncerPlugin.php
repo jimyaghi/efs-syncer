@@ -88,10 +88,10 @@ namespace YL {
 				'status'      => static::STATUS_QUEUED,
 				'invoked_by'  => null
 			];
-			$job_to_add                = $job_to_add + $defaults;
+			$job_to_add                = array_merge( $defaults, $job_to_add );
 			$job_to_add['instance_id'] = $job_to_add['instance_id'] ?: $myInstanceID;
 			$jobs                      = $this->getJob();
-			$jobs[ $jobId ]            = $job_to_add;
+			$jobs[ $job_to_add['id'] ] = $job_to_add;
 			$this->update_option( 'efss_jobs_' . $job_to_add['instance_id'], $jobs );
 
 			return $job_to_add;
@@ -273,7 +273,7 @@ namespace YL {
 				}
 				// do the operation and wait
 				echo "rsync -aWPAXE --delete --inplace \"{$fromDir}/$dir/\" \"{$toDir}/$dir\" >> /var/log/yaghilabs/{$operationType}.log 2>&1";
-				shell_exec( "rsync -aWPAXE --dry-run --delete --inplace \"{$fromDir}/$dir/\" \"{$toDir}/$dir\" >> /var/log/yaghilabs/{$operationType}.log" );
+				shell_exec( "rsync -aWPAXE --delete --inplace \"{$fromDir}/$dir/\" \"{$toDir}/$dir\" >> /var/log/yaghilabs/{$operationType}.log" );
 			}
 		}
 
@@ -368,7 +368,7 @@ namespace YL {
 		 * @return bool
 		 */
 		private function isSyncAllowed() {
-			return !$this->get_option( 'efss_disallow_sync', false );
+			return ! $this->get_option( 'efss_disallow_sync', false );
 		}
 
 		/**
