@@ -31,7 +31,7 @@ namespace YL {
 		/**
 		 * @var EFSSyncerPlugin
 		 */
-		private static $instance;
+		private static $instance = null;
 
 
 		/**
@@ -46,7 +46,7 @@ namespace YL {
 		 * @return EFSSyncerPlugin
 		 */
 		public static function getInstance() {
-			if ( static::$instance ) {
+			if ( !static::$instance ) {
 				static::$instance = new static();
 			}
 
@@ -394,12 +394,11 @@ namespace YL {
 		 * attaches the Wordpress hooks that allow us to operate when file system changes occur
 		 */
 		public function attach_hooks() {
-			do_action('init', [$this, 'register_cron']);
-			do_action('init', [ $this, 'registerSelf' ] );
+			add_action('init', [ $this, 'registerSelf' ] );
 
-			do_action( 'delete_plugin', [ $this, 'syncToEFS' ] );
-			do_action( 'upgrader_process_complete', [ $this, 'syncToEFS' ] );
-			do_action( 'deleted_theme', [ $this, 'syncToEFS' ] );
+			add_action( 'delete_plugin', [ $this, 'syncToEFS' ] );
+			add_action( 'upgrader_process_complete', [ $this, 'syncToEFS' ] );
+			add_action( 'deleted_theme', [ $this, 'syncToEFS' ] );
 		}
 	}
 }
