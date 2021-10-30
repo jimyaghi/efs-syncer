@@ -188,7 +188,8 @@ namespace YL {
 			$instance_ids = $this->getAllInstanceIds();
 			foreach ( $instance_ids as $id ) {
 				$last_alive = $this->get_option( 'efss_last_alive_' . $id, false );
-				if ( $last_alive === false || ( microtime( true ) - $last_alive ) <= static::INSTANCE_TIME_LIMIT ) {
+
+				if ( ! $last_alive || bccomp( bcsub( microtime( true ), $last_alive ), static::INSTANCE_TIME_LIMIT ) <= 0 ) {
 					continue;
 				}
 				$this->out( "Deleting dead instance $id" );
@@ -281,11 +282,14 @@ namespace YL {
 		 * If a lock has been taken out and took too long to release, we assume a dead process and delete it
 		 */
 		public function releaseExpiredLocks() {
-			$lockTime = $this->get_option( 'efss_disallow_sync', false ) ?: false;
-			if ( $lockTime !== false && ( microtime( true ) - $lockTime ) > static::LOCK_TIME_LIMIT ) {
-				$this->update_option( 'efss_disallow_sync', false );
+			$lockTime = $this->get_option( 'efss_disallow_sync', false );
+			if ( ! $lockTime
+			     || bccomp( bcsub( microtime( true ), $lockTime ), static::LOCK_TIME_LIMIT ) < 0 ) {
+				return;
 			}
+			$this->update_option( 'efss_disallow_sync', false );
 		}
+
 
 		/**
 		 * Updates the given jobId so it now has a status of started
@@ -319,8 +323,8 @@ namespace YL {
 			$instance_ids = $this->getAllInstanceIds();
 
 			// flatten the jobs array
-			$minTime     = PHP_FLOAT_MAX;
-			$minInstance = PHP_INT_MAX;
+			$minTime     = null;
+			$minInstance = null;
 			$minJob      = null;
 
 			foreach ( $instance_ids as $instance_id ) {
@@ -330,8 +334,10 @@ namespace YL {
 						continue;
 					}
 
-					if ( $job['created_at'] < $minTime
-					     || ( $job['created_at'] === $minTime && strcmp( $minInstance, $instance_id ) < 0 ) ) {
+					if ( $minTime === null
+					     || bccomp( $job['created_at'], $minTime ) < 0
+					     || ( bccomp( $job['created_at'], $minTime ) === 0 && strcmp( $instance_id, $minInstance ) < 0 )
+					) {
 						$minTime     = $job['created_at'];
 						$minInstance = $instance_id;
 						$minJob      = $job;
